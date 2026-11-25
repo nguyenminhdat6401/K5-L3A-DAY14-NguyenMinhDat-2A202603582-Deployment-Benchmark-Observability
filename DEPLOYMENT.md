@@ -69,4 +69,8 @@ The free web service can sleep during inactivity, so the first request may take 
 
 ## Screenshots
 
-Pending: capture Render deployment dashboard as screenshots/dashboard.png, service live as screenshots/running.png, and the four HTTP checks as screenshots/test.png before final submission. No screenshot files have been created yet.
+- [Deployment dashboard](screenshots/dashboard.png)
+- [Public health endpoint](screenshots/running.png)
+- [Four HTTP checks, API key hidden](screenshots/test.png)
+
+All three files are present; test.png was visually checked and shows 200,200,401,200 without the API key.

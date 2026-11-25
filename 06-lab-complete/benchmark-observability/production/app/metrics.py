@@ -52,3 +52,8 @@ AGENT_INFO = Gauge(
     "agent_info", "Thông tin phiên bản agent (luôn = 1)",
     ["version", "model"],
 )
+
+QUESTION_LENGTH = Histogram(
+    "agent_question_length_chars", "Question length in characters",
+    buckets=(20, 50, 100, 200, 500, 1000, 2000),
+)

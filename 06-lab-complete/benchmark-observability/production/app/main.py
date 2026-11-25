@@ -176,6 +176,7 @@ async def run_agent(question: str) -> mock_llm.LLMResult:
 # ─────────────────────────────────────────────────────────
 @app.post("/ask", response_model=AskResponse, dependencies=[Depends(verify_api_key)])
 async def ask(body: AskRequest, request: Request):
+    m.QUESTION_LENGTH.observe(len(body.question))
     try:
         result = await run_agent(body.question)
     except mock_llm.LLMError as exc:

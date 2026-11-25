@@ -230,7 +230,7 @@ Kết luận từ lần chạy: cả /health và POST /ask qua cổng 80 đều 
 
 Đã deploy agent trong 06-lab-complete lên Render, không deploy app mẫu Part 3. URL public: https://lab14-agent.onrender.com. Web service lab14-agent và Key Value lab14-redis đều dùng Free compute, cùng region Oregon. Redis-compatible datastore nối qua private URL; API key là secret trong môi trường Render.
 
-Kiểm tra thực tế ngày 25/11/2026 sau khi deployment báo Live: GET /health → 200, GET /ready → 200, POST /ask thiếu key → 401, POST /ask key đúng → 200. Xem body và lệnh tái hiện trong DEPLOYMENT.md. Chưa tạo ba ảnh screenshots của deployment; cần chụp trước khi nộp.
+Kiểm tra thực tế ngày 25/11/2026 sau khi deployment báo Live: GET /health → 200, GET /ready → 200, POST /ask thiếu key → 401, POST /ask key đúng → 200. Xem body và lệnh tái hiện trong DEPLOYMENT.md. Ba ảnh deployment đã lưu trong screenshots/dashboard.png, running.png và test.png; test.png đã kiểm tra trực quan không có API key.
 
 Railway đã được thử nhưng workspace bị restricted do unusual activity; deployment Redis bị Blocked dù còn trial credit. Không nâng cấp gói, không dùng tài khoản khác để né hạn chế. Render là nền tảng thay thế được đề bài cho phép.
 
@@ -434,7 +434,7 @@ Liveness cho biết process còn đáp ứng; readiness cho biết instance đã
 
 ### Exercise 5.2: Graceful shutdown
 
-Bản mẫu có lifespan startup/shutdown và theo dõi số request đang xử lý. Khi shutdown cần hoàn thành request đang chạy, dọn tài nguyên và thoát; Uvicorn xử lý signal và điều phối quá trình này. Chưa có bằng chứng test SIGTERM khi request đang chạy, nên chưa kết luận đã kiểm chứng graceful shutdown thực tế.
+Bản mẫu có lifespan startup/shutdown và theo dõi số request đang xử lý. Khi shutdown cần hoàn thành request đang chạy, dọn tài nguyên và thoát; Uvicorn xử lý signal và điều phối quá trình này. Kiểm tra bổ sung bằng subprocess thật: request POST /ask?question=LongTask đang chạy, gửi SIGTERM sau 50 ms; request trả 200 và process exit 0. Lưu reports/part5_graceful_shutdown.json.
 
 ### Exercise 5.3–5.5: Stateless, load balancing và history
 
@@ -598,3 +598,75 @@ Giới hạn: script đã xác nhận đủ checklist local, nhưng chưa có UR
 - Sinh viên yêu cầu AI tự deploy, đăng nhập Render trực tiếp rồi trả quyền điều khiển.
 - AI tạo Redis-compatible Key Value miễn phí, cấu hình web service Docker miễn phí, tạo API key bằng Render Generate, nối private Redis URL, commit/push riêng 12 file Part 6 (21d557e), deploy và kiểm chứng 4 HTTP request public.
 - Kết quả: health=200, ready=200, ask thiếu key=401, ask key đúng=200. Không lưu API key vào bài hoặc repo; ảnh screenshot còn cần bổ sung.
+
+### 25/11/2026 — Part 7: concurrency benchmark
+
+- Sinh viên tự khởi động v1:8001 và v2:8002, chạy load_test.py với 300 request ở concurrency 1, 10, 50, 100; bốn file reports/load_v2_c*.json được lưu.
+- AI đọc file JSON trên máy và điền bảng 2.1, SLO và nhận xét vào BENCHMARK_REPORT.md. Mức 1/10 PASS, mức 50 FAIL error rate, mức 100 FAIL p95; không sửa số đo hoặc chạy lại để chọn kết quả đẹp.
+- Chưa hoàn thành tail latency, eval và observability stack.
+
+### 25/11/2026 — Part 7: tail latency
+
+- Sinh viên khởi động lại v2 lần lượt với MOCK_SLOW_RATE 0, 0.03, 0.1 và tự chạy mỗi lần 300 request, concurrency 20, lưu ba reports/load_v2_slow_*.json.
+- AI đọc ba file JSON, điền bảng 2.2 và giải thích p99 nhạy với lỗi đuôi hiếm, p95 tăng khi nhóm request chậm đủ lớn; giữ nguyên kết quả SLO FAIL p95 ở mức 0.1.
+- Eval v1/v2 và quan sát Docker stack chưa hoàn thành.
+
+### 25/11/2026 — Part 7: eval baseline và bổ sung knowledge base
+
+- Sinh viên chạy eval v1 và v2, lưu eval_v1.json và eval_v2.json. V1=1/23, v2=21/23, 20 câu cải thiện và không regression.
+- AI đọc report và bộ câu hỏi ở chế độ chỉ đọc, bổ sung tài liệu JWT/API key và Kubernetes HPA vào KNOWLEDGE_BASE trong develop/utils/mock_llm.py và production/utils/mock_llm.py. Không sửa golden_dataset.jsonl, script eval hoặc report baseline.
+- Đã điền số đo v1/v2 vào báo cáo; sinh viên cần restart v2 và chạy gate 100% để xác nhận bản sửa. Chưa khẳng định đạt 23/23 trước lần chạy thực tế.
+
+### 25/11/2026 — Part 7: xác nhận eval sau sửa
+
+- Sinh viên restart v2, chạy --min-accuracy 1.0 --baseline reports/eval_v2.json --out reports/eval_v2_fixed.json.
+- File JSON thực tế có 23/23, accuracy 1.0, errors 0, avg tokens 123.7, cost 0.000877 USD, cost/câu đúng 0.00003815 USD, p95 279.7 ms. Output cho thấy hai câu cải thiện, 0 regression, gate PASS.
+- AI ghi các số vào báo cáo và giải thích step CI dựa trên exit code để chặn merge. Chưa chạy workflow GitHub Actions thực tế; quan sát stack Docker còn phải làm.
+
+### 25/11/2026 — Sửa lỗi khởi động agent observability
+
+- Sinh viên build stack Part 7; log agent lặp ModuleNotFoundError: No module named uvicorn.
+- Nguyên nhân trong Dockerfile: user agent có home /app, nhưng dependency pip --user được copy sang /home/agent/.local; PATH tìm được executable ở đó trong khi Python user-site không dùng cùng vị trí.
+- AI sửa riêng Dockerfile production của Part 7 để builder cài vào virtualenv /opt/venv, runtime copy đúng cùng đường dẫn và PATH trỏ /opt/venv/bin. Giữ non-root, HEALTHCHECK và một worker/container để metrics chính xác theo process.
+- Chờ sinh viên rebuild và kiểm chứng; chưa ghi stack đã hoạt động thành công.
+
+### 25/11/2026 — Part 7: đối chiếu trace và log
+
+- Sinh viên tạo tải Locust và cung cấp ảnh Grafana có tải, trace Jaeger 4d5005297991e0ac3f82b52e67c6975c, cùng hai log JSON khớp trace_id.
+- AI ghi dữ liệu vào phần 4.3 của báo cáo và phát hiện bất nhất: Jaeger ~7.2 s, log HTTP 220.8 ms, mock llm_ms 193.2. Không tự thay số hoặc khẳng định nguyên nhân chưa được kiểm chứng.
+- Trace lỗi và hai alert cùng firing chưa hoàn thành.
+
+### 25/11/2026 — Part 7: trace lỗi upstream
+
+- Sinh viên cung cấp ảnh span chat có exception mock 503 và hai log JSON cùng trace_id e9c48087b47688ca92ac72166b0d7cbb; HTTP log status=503, ms=97.0, Jaeger tổng 97.9 ms.
+- AI ghi bằng chứng và giải thích đường đi exception → span ERROR → HTTP 503 trong báo cáo. Không có API key trong bằng chứng được ghi.
+- Hai alert cùng firing và benchmark scale 1/3 còn phải thực hiện.
+
+### 25/11/2026 — Part 7: alert firing và khôi phục cấu hình
+
+- Sinh viên áp dụng fault injection error=0.2/slow=0.3 lúc 17:15:03 +0700, cung cấp ảnh ba alert firing và giờ quan sát 17:18:34 +0700.
+- AI ghi khoảng quan sát 211 giây, không coi là thời gian firing đầu tiên của từng alert. Đã trả hai biến về mặc định error=0.01/slow=0.03 trong .env, giữ nguyên API key, chưa push .env.
+- Chờ sinh viên áp dụng lại Compose, tắt tải web và chạy benchmark headless scale 1/3. Các thí nghiệm C/D/E riêng chưa có bằng chứng.
+
+### 25/11/2026 — Part 7: benchmark scaling và gom bằng chứng
+
+- Sinh viên chạy headless Locust 100 users, ramp 10/s, 2 phút cho 1 và 3 instance, tải web đã được hướng dẫn dừng. AI đọc file CSV và ghi riêng hàng /ask vào báo cáo.
+- CSV có snapshot khác thống kê shutdown terminal; AI ghi rõ khác biệt và dùng file CSV làm nguồn chính, không sửa dữ liệu đo.
+- AI copy JSON/CSV ra reports/ và benchmark-results/ ở gốc repo; tạo screenshots/ và chép các ảnh minh chứng sinh viên đã gửi nếu chưa tồn tại. Chưa thấy ảnh test.png được cung cấp trong chat.
+- Các thí nghiệm C/D/E riêng còn chưa chạy; phần trả lời lý thuyết và kết luận do AI soạn cần sinh viên đọc, kiểm chứng và giải thích được.
+
+### 25/11/2026 — Part 7: model lớn
+
+- Sinh viên chạy model mock-llm-large và gửi ảnh Grafana, Prometheus. AI ghi p95=705.94 ms, burn rate=26.0183 USD/giờ mock, LLMCostBurnRateHigh FIRING.
+- Active Since cho thấy alert active từ trước; không tự suy ra thời gian firing kể từ đổi model. Hai ảnh được lưu riêng, không ghi đè ảnh ba alert firing.
+- Thí nghiệm pause instance (D) và đổi v1 (E) chưa được kiểm chứng.
+
+
+### 25/11/2026 — Hoàn tất các bước còn lại theo yêu cầu sinh viên
+
+- AI tự chạy thí nghiệm D: AgentInstanceDown được quan sát FIRING sau elapsed monotonic 50.12 giây, tự unpause container, lưu raw JSON; ghi rõ khác biệt clock timestamp/monotonic.
+- AI chạy thí nghiệm E qua stack v1: 1/23, eval exit1, không có alert chất lượng; lưu eval và alert snapshot. Khôi phục v2/model nhỏ sau test.
+- AI bổ sung Histogram độ dài câu hỏi vào develop/production theo Exercise7.1; smoke test count1/sum6 PASS, production có dữ liệu. promtool alert unit tests SUCCESS, /metrics qua Nginx404.
+- AI kiểm chứng bổ sung Part5 shutdown: request200, exit0; điền câu hỏi metrics/dashboard, bảng chaos và kết luận; ghi số đo theo đúng nguồn.
+- test.png hiện có và được kiểm tra trực quan: URL public, bốn mã200/200/401/200, không hiển thị API key. Secret scan trước push được ghi trong bước kiểm tra cuối.
+- Sinh viên dùng AI để triển khai/sửa code và soạn báo cáo; cần tự đọc, hiểu và giải thích được code cùng số đo khi Lab Coach hỏi. Không tự nhận các lần chạy bổ sung của AI là thao tác do sinh viên trực tiếp gõ.

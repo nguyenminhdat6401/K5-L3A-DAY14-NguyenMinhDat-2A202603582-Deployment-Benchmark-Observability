@@ -1,0 +1,23 @@
+{
+  "observed_at": "2026-11-25T10:38:00.260959+00:00",
+  "alerts": {
+    "status": "success",
+    "data": {
+      "alerts": [
+        {
+          "labels": {
+            "alertname": "LLMCostBurnRateHigh",
+            "severity": "warning"
+          },
+          "annotations": {
+            "description": "Tốc độ chi tiêu hiện tại: $8.51/giờ",
+            "summary": "Chi phí LLM đang vượt $2/giờ"
+          },
+          "state": "firing",
+          "activeAt": "2026-11-25T10:20:17.571501534Z",
+          "value": "8.506774461073238e+00"
+        }
+      ]
+    }
+  }
+}

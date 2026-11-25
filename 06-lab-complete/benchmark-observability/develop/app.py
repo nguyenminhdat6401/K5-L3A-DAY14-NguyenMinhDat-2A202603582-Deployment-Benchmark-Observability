@@ -65,6 +65,10 @@ disable_created_metrics()  # bỏ các series *_created cho /metrics dễ đọc
 
 LATENCY_BUCKETS = (0.05, 0.1, 0.2, 0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0)
 
+QUESTION_LENGTH = Histogram(
+    "agent_question_length_chars", "Question length in characters",
+    buckets=(20, 50, 100, 200, 500, 1000, 2000),
+)
 HTTP_REQUESTS = Counter(
     "http_requests_total", "Tổng số HTTP request",
     ["method", "route", "status"],
@@ -155,6 +159,7 @@ class AskResponse(BaseModel):
 @app.post("/ask", response_model=AskResponse)
 async def ask(body: AskRequest, request: Request):
     # v2 có bước retrieval (RAG) → chính xác hơn nhưng prompt dài hơn → tốn token hơn
+    QUESTION_LENGTH.observe(len(body.question))
     context = await mock_llm.search_knowledge_base(body.question) if AGENT_VERSION == "v2" else None
 
     try:
